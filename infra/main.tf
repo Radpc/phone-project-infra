@@ -189,7 +189,6 @@ resource "aws_db_instance" "db_instance" {
   password               = var.rds_password
   instance_class         = "db.t3.micro"
   allocated_storage      = 200
-  publicly_accessible    = true
   skip_final_snapshot    = true
   availability_zone      = "sa-east-1a"
   vpc_security_group_ids = [aws_security_group.db-security-group.id]
