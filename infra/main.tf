@@ -145,12 +145,17 @@ resource "aws_instance" "instance" {
   vpc_security_group_ids = [aws_security_group.ecs-sg.id]
 
   ami           = "ami-0d866da98d63e2b42"
-  instance_type = "t2.micro"
+  instance_type = "t2.medium"
   key_name      = "main-key"
 
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
+
+              sudo apt install docker.io -y
+              sudo apt install apache-2 -y
+              sudo systemctl start apache2
+              sudo chown -R ubuntu:ubuntu /var/www/
 
               echo "Installing Node.js..."
               if ! command -v nvm &> /dev/null; then
@@ -160,7 +165,6 @@ resource "aws_instance" "instance" {
               fi
               nvm install node
 
-              echo "Installing PM2..."
               if ! command -v pm2 &> /dev/null; then
               npm install -g pm2
               fi
