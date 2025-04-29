@@ -53,9 +53,12 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      - name: Read env file
+        run: |
+          echo "${{ secrets.TERRAFORM_ENV }}"
+
       - name: Create env file
         run: |
-          echo "${{ secrets.TERRAFORM_ENV }}" && \
           echo "${{ secrets.TERRAFORM_ENV }}" > ./infra/terraform.tfvars
 
       - name: Terraform Plan
