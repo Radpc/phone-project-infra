@@ -113,7 +113,7 @@ resource "aws_security_group" "rds-sg" {
     from_port       = "3306"
     to_port         = "3306"
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs-sg]
+    security_groups = [aws_security_group.ecs-sg.id]
   }
 }
 
