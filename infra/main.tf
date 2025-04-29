@@ -139,6 +139,6 @@ resource "aws_db_instance" "db_instance" {
   identifier        = "rds-instance"
   username          = var.rds_user
   password          = var.rds_password
-  instance_class    = "db.t2.micro"
+  instance_class    = "db.t3.micro"
   allocated_storage = 200
 }
