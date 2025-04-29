@@ -30,7 +30,7 @@ resource "aws_subnet" "subnet-private" {
 
 # Route tables
 resource "aws_route_table" "public-route-table" {
-  vpc_id = aws_vpc.tutorial_vpc.id
+  vpc_id = aws_vpc.main-vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -39,7 +39,7 @@ resource "aws_route_table" "public-route-table" {
 }
 
 resource "aws_route_table" "private-route-table" {
-  vpc_id = aws_vpc.tutorial_vpc.id
+  vpc_id = aws_vpc.main-vpc.id
 }
 
 # Route Table Associations
@@ -120,7 +120,7 @@ resource "aws_security_group" "rds-sg" {
 resource "aws_db_subnet_group" "db-subnet-group" {
   name        = "Phone DB subnet group"
   description = "DB subnet group"
-  subnet_ids  = [for subnet in aws_subnet.tutorial_private_subnet : subnet.id]
+  subnet_ids  = [for subnet in aws_subnet.subnet-private : subnet.id]
 }
 
 resource "aws_db_instance" "db_instance" {
@@ -141,8 +141,8 @@ resource "aws_db_instance" "db_instance" {
 
 resource "aws_instance" "instance" {
   count                  = var.settings.web_app.count
-  subnet_id              = aws_subnet.tutorial_public_subnet[count.index].id
-  vpc_security_group_ids = [aws_security_group.tutorial_web_sg.id]
+  subnet_id              = aws_subnet.subnet-public[count.index].id
+  vpc_security_group_ids = [aws_security_group.ecs-sg.id]
 
   ami           = "ami-0d866da98d63e2b42"
   instance_type = "t2.micro"
@@ -169,7 +169,7 @@ resource "aws_instance" "instance" {
 }
 
 
-resource "aws_eip" "tutorial_web_eip" {
+resource "aws_eip" "eip" {
   count    = var.settings.web_app.count
   instance = aws_instance.instance[count.index].id
 }

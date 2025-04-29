@@ -1,7 +1,7 @@
 output "web_public_ip" {
   description = "The public IP address of the EC2 instance"
-  value       = aws_eip.one.public_ip
-  depends_on  = [aws_eip.one]
+  value       = aws_eip.eip.public_ip
+  depends_on  = [aws_eip.eip]
 }
 
 output "database_endpoint" {
