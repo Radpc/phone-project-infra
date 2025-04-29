@@ -192,5 +192,6 @@ resource "aws_db_instance" "db_instance" {
   publicly_accessible    = true
   skip_final_snapshot    = true
   availability_zone      = "sa-east-1a"
-  vpc_security_group_ids = [aws_db_subnet_group.db-subnet-group.id]
+  vpc_security_group_ids = [aws_security_group.db-security-group]
+  db_subnet_group_name   = aws_db_subnet_group.db-subnet-group.id
 }
