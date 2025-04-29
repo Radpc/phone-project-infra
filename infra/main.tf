@@ -131,17 +131,27 @@ resource "aws_instance" "instance" {
               EOF
 }
 
+resource "aws_db_subnet_group" "db-subnet" {
+  name       = "db-subnet"
+  subnet_ids = [aws_subnet.subnet-1]
+
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
 
 resource "aws_db_instance" "db_instance" {
-  engine                 = "mysql"
-  engine_version         = "8.0.41"
-  multi_az               = false
-  identifier             = "rds-instance"
-  username               = var.rds_user
-  password               = var.rds_password
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 200
-  publicly_accessible    = true
-  skip_final_snapshot    = true
+  engine              = "mysql"
+  engine_version      = "8.0.41"
+  multi_az            = false
+  identifier          = "rds-instance"
+  username            = var.rds_user
+  password            = var.rds_password
+  instance_class      = "db.t3.micro"
+  allocated_storage   = 200
+  publicly_accessible = true
+  skip_final_snapshot = true
+
+  db_subnet_group_name   = aws_db_subnet_group.db-subnet.name
   vpc_security_group_ids = [aws_security_group.security-group.id]
 }
