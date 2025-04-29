@@ -53,11 +53,15 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      - name: Create env file
+        run: |
+          echo "${{ secrets.TERRAFORM_ENV }}" > ./infra/envs/terraform.tfvars
+
       - name: Terraform Plan
         id: terraform-plan
         run: cd infra &&
           terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }} &&
-          terraform plan -var-file="./envs/${{ inputs.environment }}/terraform.tfvars" -out="${{ inputs.environment }}.plan"
+          terraform plan -var-file="./envs/terraform.tfvars" -out="${{ inputs.environment }}.plan"
 
       - name: Terraform Apply
         id: terraform-apply

@@ -1,3 +1,6 @@
-variable "bucket_name" {
+variable "rds_user" {
+  type = string
+}
+variable "rds_password" {
   type = string
 }

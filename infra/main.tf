@@ -103,11 +103,22 @@ resource "aws_instance" "instance" {
     network_interface_id = aws_network_interface.web-server-nic.id
   }
 
-  # user_data = <<-EOF
-  #             #!/bin/bash
-  #             sudo apt update -y
-  #             sudo apt install apache2 -y
-  #             sudo systemctl start apache2
-  #             sudo bash -c 'echo your very first web server > /var/www/html/index.html'
-  #             EOF
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update -y
+              
+              echo "Installing Node.js..."
+              if ! command -v nvm &> /dev/null; then
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+                export NVM_DIR="$HOME/.nvm"
+                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+              fi
+              nvm install node
+
+              echo "Installing PM2..."
+              if ! command -v pm2 &> /dev/null; then
+              npm install -g pm2
+              fi
+
+              EOF
 }
