@@ -41,7 +41,7 @@ resource "aws_subnet" "private-subnet-1" {
 resource "aws_subnet" "private-subnet-2" {
   vpc_id            = aws_vpc.main-vpc.id
   cidr_block        = "10.0.102.0/24"
-  availability_zone = "sa-east-1a"
+  availability_zone = "sa-east-1b"
 }
 
 resource "aws_route_table_association" "public_route_table" {
