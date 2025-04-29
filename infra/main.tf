@@ -27,6 +27,12 @@ resource "aws_subnet" "subnet-1" {
   availability_zone = "sa-east-1a"
 }
 
+resource "aws_subnet" "subnet-2" {
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "sa-east-1b"
+}
+
 resource "aws_route_table_association" "table-association" {
   subnet_id      = aws_subnet.subnet-1.id
   route_table_id = aws_route_table.route-table.id
@@ -133,7 +139,7 @@ resource "aws_instance" "instance" {
 
 resource "aws_db_subnet_group" "db-subnet" {
   name       = "db-subnet"
-  subnet_ids = [aws_subnet.subnet-1.id]
+  subnet_ids = [aws_subnet.subnet-1.id,aws_subnet.subnet-2.id]
 
   tags = {
     Name = "My DB subnet group"
@@ -151,6 +157,7 @@ resource "aws_db_instance" "db_instance" {
   allocated_storage   = 200
   publicly_accessible = true
   skip_final_snapshot = true
+  availability_zone = 
 
   db_subnet_group_name   = aws_db_subnet_group.db-subnet.name
   vpc_security_group_ids = [aws_security_group.security-group.id]
