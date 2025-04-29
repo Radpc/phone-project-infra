@@ -53,9 +53,6 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Unlock
-        run: terraform force-unlock d0673763-3e4b-ba3c-1517-eb9fa488c445
-
       - name: Read env file
         run: |
           echo "${{ secrets.TERRAFORM_ENV }}"
