@@ -62,6 +62,14 @@ resource "aws_security_group" "security-group" {
   }
 
   ingress {
+    description = "RDS Database"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description = "SSH"
     from_port   = 22
     to_port     = 22
@@ -106,7 +114,7 @@ resource "aws_instance" "instance" {
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
-              
+
               echo "Installing Node.js..."
               if ! command -v nvm &> /dev/null; then
                 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
@@ -121,4 +129,16 @@ resource "aws_instance" "instance" {
               fi
 
               EOF
+}
+
+
+resource "aws_db_instance" "db_instance" {
+  engine            = "mysql"
+  engine_version    = "8.0.31"
+  multi_az          = false
+  identifier        = "rds-instance"
+  username          = var.rds_user
+  password          = var.rds_password
+  instance_class    = "db.t2.micro"
+  allocated_storage = 200
 }
