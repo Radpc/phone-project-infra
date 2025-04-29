@@ -6,7 +6,7 @@ resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main-vpc.id
 }
 
-resource "aws_route_table" "route-table" {
+resource "aws_route_table" "public-route-table" {
   vpc_id = aws_vpc.main-vpc.id
 
   route {
@@ -21,18 +21,46 @@ resource "aws_route_table" "route-table" {
 
 }
 
+resource "aws_route_table" "private-route-table" {
+  vpc_id = aws_vpc.main-vpc.id
+}
+
+# Subnets ##################################################
 resource "aws_subnet" "subnet-1" {
   vpc_id            = aws_vpc.main-vpc.id
   cidr_block        = "10.0.1.0/24"
   availability_zone = "sa-east-1a"
 }
 
-
-resource "aws_route_table_association" "table-association" {
-  subnet_id      = aws_subnet.subnet-1.id
-  route_table_id = aws_route_table.route-table.id
+resource "aws_subnet" "private-subnet-1" {
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = "10.0.101.0/24"
+  availability_zone = "sa-east-1a"
 }
 
+resource "aws_subnet" "private-subnet-2" {
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = "10.0.102.0/24"
+  availability_zone = "sa-east-1a"
+}
+
+resource "aws_route_table_association" "public_route_table" {
+  subnet_id      = aws_subnet.subnet-1.id
+  route_table_id = aws_route_table.public-route-table.id
+}
+
+resource "aws_route_table_association" "private_route_table_1" {
+  subnet_id      = aws_subnet.subnet-1.id
+  route_table_id = aws_route_table.public-route-table.id
+}
+
+resource "aws_route_table_association" "private_route_table_2" {
+  subnet_id      = aws_subnet.subnet-2.id
+  route_table_id = aws_route_table.public-route-table.id
+}
+
+
+# Security groups #######################################################
 resource "aws_security_group" "security-group" {
   name        = "allow_web_traffic"
   description = "Allow web inbound traffic"
@@ -132,16 +160,37 @@ resource "aws_instance" "instance" {
               EOF
 }
 
+resource "aws_security_group" "db-security-group" {
+  name        = "db_security_group"
+  description = "Security group for the db instance"
+  vpc_id      = aws_vpc.main-vpc.id
+
+  ingress {
+    description     = "Allow MySQL traffic from only the web sg"
+    from_port       = "3306"
+    to_port         = "3306"
+    protocol        = "tcp"
+    security_groups = [aws_security_group.security-group]
+  }
+}
+
+resource "aws_db_subnet_group" "db-subnet-group" {
+  name        = "db_subnet_group"
+  description = "DB subnet group for the RDS"
+  subnet_ids  = [aws_subnet.private-subnet-1.id, aws_subnet.private-subnet-2.id]
+}
+
 resource "aws_db_instance" "db_instance" {
-  engine              = "mysql"
-  engine_version      = "8.0.41"
-  multi_az            = false
-  identifier          = "rds-instance"
-  username            = var.rds_user
-  password            = var.rds_password
-  instance_class      = "db.t3.micro"
-  allocated_storage   = 200
-  publicly_accessible = true
-  skip_final_snapshot = true
-  availability_zone   = "sa-east-1a"
+  engine                 = "mysql"
+  engine_version         = "8.0.41"
+  multi_az               = false
+  identifier             = "rds-instance"
+  username               = var.rds_user
+  password               = var.rds_password
+  instance_class         = "db.t3.micro"
+  allocated_storage      = 200
+  publicly_accessible    = true
+  skip_final_snapshot    = true
+  availability_zone      = "sa-east-1a"
+  vpc_security_group_ids = [aws_db_subnet_group.db-subnet-group.id]
 }
