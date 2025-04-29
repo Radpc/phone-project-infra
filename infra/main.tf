@@ -1,73 +1,68 @@
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "aws_vpc" "main-vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
 }
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main-vpc.id
 }
 
+# ===============================================================
+# Subnets =======================================================
+# ===============================================================
+resource "aws_subnet" "subnet-public" {
+  count             = var.subnet_count.public
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = var.public_subnet_cidr_blocks[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+}
+
+resource "aws_subnet" "subnet-private" {
+  count             = var.subnet_count.private
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = var.private_subnet_cidr_blocks[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+}
+
+# Route tables
 resource "aws_route_table" "public-route-table" {
-  vpc_id = aws_vpc.main-vpc.id
+  vpc_id = aws_vpc.tutorial_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.gw.id
   }
-
-  route {
-    ipv6_cidr_block = "::/0"
-    gateway_id      = aws_internet_gateway.gw.id
-  }
-
 }
 
 resource "aws_route_table" "private-route-table" {
-  vpc_id = aws_vpc.main-vpc.id
+  vpc_id = aws_vpc.tutorial_vpc.id
 }
 
-# Subnets ##################################################
-resource "aws_subnet" "subnet-1" {
-  vpc_id            = aws_vpc.main-vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "sa-east-1a"
-}
-
-resource "aws_subnet" "private-subnet-1" {
-  vpc_id            = aws_vpc.main-vpc.id
-  cidr_block        = "10.0.101.0/24"
-  availability_zone = "sa-east-1a"
-}
-
-resource "aws_subnet" "private-subnet-2" {
-  vpc_id            = aws_vpc.main-vpc.id
-  cidr_block        = "10.0.102.0/24"
-  availability_zone = "sa-east-1b"
-}
-
-resource "aws_route_table_association" "public_route_table" {
-  subnet_id      = aws_subnet.subnet-1.id
+# Route Table Associations
+resource "aws_route_table_association" "public" {
+  count          = var.subnet_count.public
   route_table_id = aws_route_table.public-route-table.id
+  subnet_id      = aws_subnet.subnet-public[count.index].id
 }
-
-resource "aws_route_table_association" "private_route_table_1" {
-  subnet_id      = aws_subnet.private-subnet-1.id
-  route_table_id = aws_route_table.public-route-table.id
-}
-
-resource "aws_route_table_association" "private_route_table_2" {
-  subnet_id      = aws_subnet.private-subnet-2.id
-  route_table_id = aws_route_table.public-route-table.id
+resource "aws_route_table_association" "private" {
+  count          = var.subnet_count.private
+  route_table_id = aws_route_table.private-route-table.id
+  subnet_id      = aws_subnet.subnet-private[count.index].id
 }
 
 
 # Security groups #######################################################
-resource "aws_security_group" "security-group" {
+resource "aws_security_group" "ecs-sg" {
   name        = "allow_web_traffic"
   description = "Allow web inbound traffic"
   vpc_id      = aws_vpc.main-vpc.id
 
   ingress {
-    description = "HTTPS"
+    description = "Allow HTTPs"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -75,7 +70,7 @@ resource "aws_security_group" "security-group" {
   }
 
   ingress {
-    description = "HTTP"
+    description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -91,15 +86,7 @@ resource "aws_security_group" "security-group" {
   }
 
   ingress {
-    description = "RDS Database"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
+    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -115,30 +102,51 @@ resource "aws_security_group" "security-group" {
 
 }
 
-resource "aws_network_interface" "web-server-nic" {
-  subnet_id       = aws_subnet.subnet-1.id
-  private_ips     = ["10.0.1.50"]
-  security_groups = [aws_security_group.security-group.id]
+
+resource "aws_security_group" "rds-sg" {
+  name        = "db_security_group"
+  description = "Security group for the db instance"
+  vpc_id      = aws_vpc.main-vpc.id
+
+  ingress {
+    description     = "Allow MySQL traffic from only the web sg"
+    from_port       = "3306"
+    to_port         = "3306"
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs-sg]
+  }
 }
 
-resource "aws_eip" "one" {
-  domain                    = "vpc"
-  network_interface         = aws_network_interface.web-server-nic.id
-  associate_with_private_ip = "10.0.1.50"
-
-  depends_on = [aws_internet_gateway.gw]
+resource "aws_db_subnet_group" "db-subnet-group" {
+  name        = "Phone DB subnet group"
+  description = "DB subnet group"
+  subnet_ids  = [for subnet in aws_subnet.tutorial_private_subnet : subnet.id]
 }
+
+resource "aws_db_instance" "db_instance" {
+  identifier          = "rds-instance"
+  engine              = var.settings.database.engine
+  engine_version      = var.settings.database.engine_version
+  db_name             = var.settings.database.db_name
+  username            = var.rds_user
+  password            = var.rds_password
+  instance_class      = var.settings.database.instance_class
+  allocated_storage   = var.settings.database.allocated_storage
+  skip_final_snapshot = var.settings.database.skip_final_snapshot
+
+  vpc_security_group_ids = [aws_security_group.rds-sg.id]
+  db_subnet_group_name   = aws_db_subnet_group.db-subnet-group.id
+}
+
 
 resource "aws_instance" "instance" {
-  ami               = "ami-0d866da98d63e2b42"
-  instance_type     = "t2.micro"
-  availability_zone = "sa-east-1a"
-  key_name          = "main-key"
+  count                  = var.settings.web_app.count
+  subnet_id              = aws_subnet.tutorial_public_subnet[count.index].id
+  vpc_security_group_ids = [aws_security_group.tutorial_web_sg.id]
 
-  network_interface {
-    device_index         = 0
-    network_interface_id = aws_network_interface.web-server-nic.id
-  }
+  ami           = "ami-0d866da98d63e2b42"
+  instance_type = "t2.micro"
+  key_name      = "main-key"
 
   user_data = <<-EOF
               #!/bin/bash
@@ -160,37 +168,8 @@ resource "aws_instance" "instance" {
               EOF
 }
 
-resource "aws_security_group" "db-security-group" {
-  name        = "db_security_group"
-  description = "Security group for the db instance"
-  vpc_id      = aws_vpc.main-vpc.id
 
-  ingress {
-    description     = "Allow MySQL traffic from only the web sg"
-    from_port       = "3306"
-    to_port         = "3306"
-    protocol        = "tcp"
-    security_groups = [aws_security_group.security-group.id]
-  }
-}
-
-resource "aws_db_subnet_group" "db-subnet-group" {
-  name        = "db_subnet_group"
-  description = "DB subnet group for the RDS"
-  subnet_ids  = [aws_subnet.private-subnet-1.id, aws_subnet.private-subnet-2.id]
-}
-
-resource "aws_db_instance" "db_instance" {
-  engine                 = "mysql"
-  engine_version         = "8.0.41"
-  multi_az               = false
-  identifier             = "rds-instance"
-  username               = var.rds_user
-  password               = var.rds_password
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 200
-  skip_final_snapshot    = true
-  availability_zone      = "sa-east-1a"
-  vpc_security_group_ids = [aws_security_group.db-security-group.id]
-  db_subnet_group_name   = aws_db_subnet_group.db-subnet-group.id
+resource "aws_eip" "tutorial_web_eip" {
+  count    = var.settings.web_app.count
+  instance = aws_instance.instance[count.index].id
 }
