@@ -133,7 +133,7 @@ resource "aws_instance" "instance" {
 
 resource "aws_db_subnet_group" "db-subnet" {
   name       = "db-subnet"
-  subnet_ids = [aws_subnet.subnet-1]
+  subnet_ids = [aws_subnet.subnet-1.id]
 
   tags = {
     Name = "My DB subnet group"
