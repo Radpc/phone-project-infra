@@ -80,7 +80,7 @@ resource "aws_eip" "one" {
 resource "aws_instance" "instance" {
   ami               = "ami-0d866da98d63e2b42"
   instance_type     = "t2.micro"
-  availability_zone = "sa-east-1"
+  availability_zone = "sa-east-1a"
   key_name          = "main-key"
 
   network_interface {
