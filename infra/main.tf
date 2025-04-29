@@ -133,12 +133,13 @@ resource "aws_instance" "instance" {
 
 
 resource "aws_db_instance" "db_instance" {
-  engine            = "mysql"
-  engine_version    = "8.0.41"
-  multi_az          = false
-  identifier        = "rds-instance"
-  username          = var.rds_user
-  password          = var.rds_password
-  instance_class    = "db.t3.micro"
-  allocated_storage = 200
+  engine              = "mysql"
+  engine_version      = "8.0.41"
+  multi_az            = false
+  identifier          = "rds-instance"
+  username            = var.rds_user
+  password            = var.rds_password
+  instance_class      = "db.t3.micro"
+  allocated_storage   = 200
+  publicly_accessible = true
 }
