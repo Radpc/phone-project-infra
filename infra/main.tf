@@ -118,7 +118,7 @@ resource "aws_security_group" "rds-sg" {
 }
 
 resource "aws_db_subnet_group" "db-subnet-group" {
-  name        = "Phone DB subnet group"
+  name        = "phone-db-subnet-group"
   description = "DB subnet group"
   subnet_ids  = [for subnet in aws_subnet.subnet-private : subnet.id]
 }

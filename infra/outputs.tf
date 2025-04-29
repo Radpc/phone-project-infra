@@ -1,6 +1,6 @@
 output "web_public_ip" {
   description = "The public IP address of the EC2 instance"
-  value       = aws_eip.eip.public_ip
+  value       = aws_eip.eip[0].public_ip
   depends_on  = [aws_eip.eip]
 }
 
