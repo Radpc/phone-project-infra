@@ -19,3 +19,4 @@ jobs:
       aws-region: "sa-east-1"
       aws-statefile-s3-bucket: "radpc-sa-east-1-terraform-statefile"
       aws-lock-dynamodb-table: "radpc-sa-east-1-terraform-lock"
+    secrets: inherit
