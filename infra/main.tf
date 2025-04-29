@@ -170,7 +170,7 @@ resource "aws_security_group" "db-security-group" {
     from_port       = "3306"
     to_port         = "3306"
     protocol        = "tcp"
-    security_groups = [aws_security_group.security-group]
+    security_groups = [aws_security_group.security-group.id]
   }
 }
 
