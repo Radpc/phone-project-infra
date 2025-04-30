@@ -13,6 +13,7 @@ On the `main` branch, with every push the workflow runs, applying the current te
 ## Keypoints
 - **Scalable**: Instances have a `count` parameter and variables are parametrized by environment input.
 - **Safe**: Sensitive data is passed through using `github secrets`
+- Because the `terraform apply` is made on a `github action` (temporary files), the state is saved using an EC2 instance (see `Backend` file)
 
 ## Note
 The ec2 model used was a t2.medium (instead of the t2.micro). It was having issues with `npm install` and often running out of memory.
